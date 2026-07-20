@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#faf6f0">
+<title>Unstuck</title>
+<style>
+:root{
+  --bg:#faf6f0; --card:#ffffff; --ink:#3d3229; --ink-soft:#8a7d6e;
+  --accent:#d4693b; --accent-soft:#f8e3d7; --green:#5e8c61; --green-soft:#e4efe4;
+  --gold:#c9962e; --line:#eee5da; --shadow:0 2px 10px rgba(61,50,41,.07);
+  --radius:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#221d18; --card:#2e2822; --ink:#f0e8de; --ink-soft:#a4988a;
+    --accent:#e07c4c; --accent-soft:#453227; --green:#7fae82; --green-soft:#2c3a2d;
+    --gold:#d8ab4d; --line:#3c352d; --shadow:0 2px 10px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.45;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+  min-height:100vh;
+}
+header{padding:22px 20px 6px;}
+header h1{font-size:1.5rem; margin:0; letter-spacing:-.02em;}
+header p{margin:4px 0 0; color:var(--ink-soft); font-size:.95rem;}
+.view{display:none; padding:10px 16px 20px; max-width:520px; margin:0 auto;}
+.view.active{display:block;}
+.card{
+  background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:18px; margin-bottom:14px; border:1px solid var(--line);
+}
+.card h2{font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin:0 0 10px;}
+.big-task{font-size:1.3rem; font-weight:650; margin:2px 0 6px; letter-spacing:-.01em;}
+.step-hint{color:var(--ink-soft); font-size:.95rem; margin-bottom:14px;}
+.step-hint b{color:var(--ink);}
+button{font-family:inherit; border:none; cursor:pointer; font-size:1rem;}
+.btn-primary{
+  display:block; width:100%; background:var(--accent); color:#fff;
+  padding:16px; border-radius:14px; font-size:1.1rem; font-weight:650;
+  box-shadow:0 3px 8px rgba(212,105,59,.3);
+}
+.btn-primary:active{transform:scale(.98);}
+.btn-secondary{
+  display:block; width:100%; background:var(--accent-soft); color:var(--accent);
+  padding:13px; border-radius:14px; font-weight:600; margin-top:8px;
+}
+.btn-ghost{background:none; color:var(--ink-soft); padding:10px; width:100%; font-size:.9rem;}
+.btn-small{background:var(--accent-soft); color:var(--accent); padding:7px 12px; border-radius:10px; font-size:.85rem; font-weight:600;}
+.btn-done{background:var(--green-soft); color:var(--green);}
+.row{display:flex; gap:8px; align-items:center;}
+.row > *{flex:1;}
+/* nav */
+nav{
+  position:fixed; bottom:0; left:0; right:0; display:flex;
+  background:var(--card); border-top:1px solid var(--line);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  z-index:50;
+}
+nav button{
+  flex:1; background:none; color:var(--ink-soft); padding:8px 4px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:2px; font-size:.7rem; font-weight:600;
+  border-radius:12px;
+}
+nav button .ico{font-size:1.35rem; line-height:1;}
+nav button.active{color:var(--accent); background:var(--accent-soft);}
+/* tasks */
+.task{border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px; background:var(--card); box-shadow:var(--shadow);}
+.task-head{display:flex; align-items:center; gap:10px;}
+.task-name{font-weight:650; flex:1; font-size:1.02rem;}
+.task-meta{font-size:.8rem; color:var(--ink-soft);}
+.chev{color:var(--ink-soft); transition:transform .2s; font-size:.9rem;}
+.task.open .chev{transform:rotate(90deg);}
+.task-body{display:none; margin-top:12px;}
+.task.open .task-body{display:block;}
+.step{display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-top:1px solid var(--line);}
+.step input[type=checkbox]{
+  appearance:none; width:24px; height:24px; min-width:24px; border:2px solid var(--ink-soft);
+  border-radius:8px; margin:0; position:relative; background:var(--card);
+}
+.step input[type=checkbox]:checked{background:var(--green); border-color:var(--green);}
+.step input[type=checkbox]:checked::after{
+  content:"✓"; color:#fff; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:.9rem; font-weight:700;
+}
+.step label{flex:1; padding-top:1px;}
+.step input:checked + label{color:var(--ink-soft); text-decoration:line-through;}
+input[type=text]{
+  width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--line);
+  background:var(--bg); color:var(--ink); font-family:inherit; font-size:1rem;
+}
+input[type=text]::placeholder{color:var(--ink-soft);}
+.add-row{display:flex; gap:8px; margin-top:10px;}
+.add-row input{flex:1;}
+.add-row button{background:var(--accent); color:#fff; border-radius:12px; padding:0 16px; font-weight:700; font-size:1.2rem;}
+.tiny-note{font-size:.82rem; color:var(--ink-soft); margin-top:10px;}
+/* boost */
+.boost-card{min-height:210px; display:flex; flex-direction:column;}
+.boost-tag{font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:8px;}
+.boost-title{font-size:1.15rem; font-weight:700; margin-bottom:8px; letter-spacing:-.01em;}
+.boost-body{color:var(--ink); flex:1; font-size:.98rem;}
+/* wins */
+.stat-row{display:flex; gap:10px; margin-bottom:14px;}
+.stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px; text-align:center; box-shadow:var(--shadow);}
+.stat .num{font-size:1.8rem; font-weight:750; color:var(--accent);}
+.stat .lbl{font-size:.78rem; color:var(--ink-soft);}
+.win-item{padding:10px 0; border-top:1px solid var(--line); font-size:.95rem;}
+.win-item .when{color:var(--ink-soft); font-size:.78rem;}
+/* timer overlay */
+#timerOverlay{
+  position:fixed; inset:0; background:var(--bg); z-index:100; display:none;
+  flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;
+}
+#timerOverlay.show{display:flex;}
+#timerTaskName{color:var(--ink-soft); font-size:1rem; margin-bottom:6px;}
+#timerStep{font-size:1.2rem; font-weight:650; margin-bottom:26px; max-width:420px;}
+#timerClock{font-size:4.5rem; font-weight:750; font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+#timerMsg{color:var(--ink-soft); margin:18px 0 30px; min-height:44px; max-width:380px; transition:opacity .4s;}
+.timer-btns{width:100%; max-width:340px;}
+#timerRing{position:relative; width:230px; height:230px; display:flex; align-items:center; justify-content:center; margin-bottom:6px;}
+#timerRing svg{position:absolute; inset:0; transform:rotate(-90deg);}
+#timerRing circle{fill:none; stroke-width:9; stroke-linecap:round;}
+#ringBg{stroke:var(--line);}
+#ringFg{stroke:var(--accent); transition:stroke-dashoffset 1s linear;}
+#timerClock{position:relative; font-size:3.2rem;}
+/* celebration */
+#celebrate{
+  position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.35); backdrop-filter:blur(3px); padding:24px;
+}
+#celebrate.show{display:flex;}
+.celebrate-card{
+  background:var(--card); border-radius:22px; padding:30px 24px; text-align:center; max-width:340px; width:100%;
+  animation:pop .35s cubic-bezier(.2,1.5,.4,1);
+}
+.celebrate-card .emoji{font-size:3rem;}
+.celebrate-card h3{margin:10px 0 6px; font-size:1.3rem;}
+.celebrate-card p{color:var(--ink-soft); margin:0 0 18px;}
+@keyframes pop{from{transform:scale(.7); opacity:0;} to{transform:scale(1); opacity:1;}}
+.fade{animation:fadein .3s;}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+.empty{color:var(--ink-soft); text-align:center; padding:30px 10px; font-size:.95rem;}
+/* learn */
+details.mech{border:1px solid var(--line); border-radius:14px; margin-bottom:10px; background:var(--card); box-shadow:var(--shadow); overflow:hidden;}
+details.mech summary{
+  list-style:none; cursor:pointer; padding:14px 16px; font-weight:650; display:flex; align-items:center; gap:10px;
+}
+details.mech summary::-webkit-details-marker{display:none;}
+details.mech summary::after{content:"＋"; margin-left:auto; color:var(--ink-soft); font-weight:400;}
+details.mech[open] summary::after{content:"−";}
+details.mech .mech-body{padding:0 16px 16px; color:var(--ink); font-size:.95rem;}
+details.mech .mech-body p{margin:0 0 10px;}
+details.mech .mech-body b{color:var(--accent);}
+.lib-item{display:block; padding:12px 0; border-top:1px solid var(--line); text-decoration:none; color:var(--ink);}
+.lib-item .lib-kind{font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--gold);}
+.lib-item .lib-name{font-weight:650;}
+.lib-item .lib-why{font-size:.85rem; color:var(--ink-soft);}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.chips button{background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:8px 12px; border-radius:999px; font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="greeting">Hello</h1>
+  <p id="subGreeting">One small thing at a time.</p>
+</header>
+
+<!-- TODAY -->
+<div class="view active" id="view-today">
+  <div class="card" id="scaryCard">
+    <h2>Today's one thing</h2>
+    <div id="scaryContent"></div>
+  </div>
+  <div class="card">
+    <h2>Feeling stuck?</h2>
+    <p style="margin:0 0 12px; font-size:.95rem;" id="miniBoost"></p>
+    <button class="btn-ghost" onclick="app.newMiniBoost()">Show me another ↻</button>
+  </div>
+  <button class="btn-ghost" onclick="app.logFreeWin()">＋ I did something else today — log it</button>
+</div>
+
+<!-- TASKS -->
+<div class="view" id="view-tasks">
+  <div class="card">
+    <h2>Add something you've been avoiding</h2>
+    <div class="add-row">
+      <input type="text" id="newTaskInput" placeholder="e.g. Car registration renewal" enterkeyhint="done">
+      <button onclick="app.addTask()">＋</button>
+    </div>
+    <p class="tiny-note">Just name it. You don't have to do it yet — writing it down is the first step, and it counts.</p>
+    <div class="chips">
+      <button onclick="app.quickAdd('med')">🩺 Book a checkup</button>
+      <button onclick="app.quickAdd('exercise')">🏃 Get exercising again</button>
+      <button onclick="app.quickAdd('sleep')">🌙 Get to bed on time</button>
+      <button onclick="app.quickAdd('call')">📞 A call I'm dodging</button>
+      <button onclick="app.quickAdd('email')">✉️ An email I owe someone</button>
+    </div>
+  </div>
+  <div id="taskList"></div>
+  <div id="doneList"></div>
+</div>
+
+<!-- BOOST -->
+<div class="view" id="view-boost">
+  <div class="card boost-card fade" id="boostCard"></div>
+  <button class="btn-secondary" onclick="app.nextBoost()">Another one</button>
+  <p class="tiny-note" style="text-align:center; margin-bottom:22px;">Short reads, grounded in CBT and procrastination research. 30 seconds each.</p>
+
+  <div class="card" style="padding:14px 16px;"><h2 style="margin:0;">The mechanics — why you avoid, and how to interrupt it</h2></div>
+
+  <details class="mech">
+    <summary>🔁 The avoidance loop</summary>
+    <div class="mech-body">
+      <p>Every time you dodge a scary task, you get an instant hit of <b>relief</b>. That relief is a reward, and it trains your brain — this is negative reinforcement, the same mechanism that maintains phobias. The task didn't get less scary; avoiding it just got more automatic.</p>
+      <p>Meanwhile the avoided thing grows in the dark. You never collect evidence that it's manageable, so your imagination fills the gap with worst cases.</p>
+      <p><b>The interrupt:</b> brief contact. Thirty seconds of opening the envelope gives your brain disconfirming evidence — "oh, that was survivable" — and the loop starts weakening. You don't have to finish anything. You just have to touch it.</p>
+    </div>
+  </details>
+  <details class="mech">
+    <summary>🧠 The ADHD "now vs not-now" brain</summary>
+    <div class="mech-body">
+      <p>ADHD isn't a knowledge problem — you know exactly what you should do. It's a <b>performance problem at the point of action</b>. Executive function differences mean future consequences (a late fee in 2 weeks, a health issue in 10 years) barely register against anything happening now. Russell Barkley calls it "time blindness": there's <b>now</b> and <b>not-now</b>, and not-now doesn't exist.</p>
+      <p><b>The interrupt:</b> stop relying on internal motivation and externalise everything. Make tasks physical and visible (the bill on the keyboard, gym bag by the door), make deadlines artificial and near ("before dinner tonight"), and shrink every task until the first step fits inside "now" — under five minutes.</p>
+    </div>
+  </details>
+  <details class="mech">
+    <summary>😰 It's about the feeling, not the task</summary>
+    <div class="mech-body">
+      <p>Procrastination research (Sirois &amp; Pychyl) is clear: we don't avoid tasks, we avoid <b>emotions</b> — the anxiety in the bill, the vulnerability in the checkup, the boredom in the paperwork. "Give in to feel good": you trade tomorrow's problem for tonight's relief.</p>
+      <p>That's why time-management systems keep failing you — they solve the wrong problem. The bill isn't a scheduling issue; it's a dread issue.</p>
+      <p><b>The interrupt:</b> name the emotion out loud ("I'm avoiding this because I'm scared of the number"). Affect labelling measurably reduces the emotion's grip. Then ask: can I tolerate this feeling for five minutes? You almost always can.</p>
+    </div>
+  </details>
+  <details class="mech">
+    <summary>🌙 Revenge bedtime procrastination</summary>
+    <div class="mech-body">
+      <p>Staying up too late scrolling isn't a discipline failure — researchers call it <b>revenge bedtime procrastination</b>: when the day gives you no free time, you steal it from sleep. The busier and more depleted the day (sound familiar?), the stronger the pull. And it's self-defeating, because the sleep debt worsens tomorrow's executive function, which worsens tomorrow's avoidance.</p>
+      <p><b>The interrupt:</b> don't target the scrolling, target the trigger — schedule actual leisure earlier in the evening so there's nothing to "steal back". Then make bedtime an if-then routine (when the episode ends, phone goes on the charger in the kitchen), not a nightly negotiation.</p>
+    </div>
+  </details>
+  <details class="mech">
+    <summary>🩺 Why we dodge checkups and exercise</summary>
+    <div class="mech-body">
+      <p>Health avoidance has an extra twist: the task threatens your <b>identity</b>, not just your time. A checkup risks bad news; a run risks feeling unfit. Avoiding them protects the self-image today at compound interest — you of all people know how that story ends clinically.</p>
+      <p><b>The interrupt:</b> reduce every health task to a booking, not an event. You're not "dealing with your health" today — you're sending one email or making one two-minute call to book a slot weeks away. Future-you handles the appointment; today-you only has to dial. For exercise, the commitment is putting shoes on and getting out the door — ten minutes counts, and usually continues by itself.</p>
+    </div>
+  </details>
+  <details class="mech">
+    <summary>⚡ Stop it in its tracks: the 4-step interrupt</summary>
+    <div class="mech-body">
+      <p>When you notice yourself deflecting off a task (suddenly checking email, tidying, "researching"):</p>
+      <p><b>1. Name it.</b> "I'm avoiding X because it makes me feel Y." Out loud if you can.</p>
+      <p><b>2. Shrink it.</b> What version of this fits in five minutes? Not "sort the bills" — "open one envelope".</p>
+      <p><b>3. Start the timer.</b> Permission to stop at five minutes, fully guilt-free. (The Today tab does this.)</p>
+      <p><b>4. Be kind afterwards.</b> Whatever happened, no self-flagellation — self-forgiveness is what prevents the next avoidance, and that's an empirical finding, not a nicety.</p>
+    </div>
+  </details>
+
+  <div class="card" style="margin-top:22px;">
+    <h2>Library — for later, when you're curious</h2>
+    <a class="lib-item" style="border-top:none;" href="https://www.strugglecare.com" target="_blank" rel="noopener"><span class="lib-kind">Book / site</span><div class="lib-name">How to Keep House While Drowning — KC Davis</div><div class="lib-why">The shame-free bible for care tasks and mail piles. "You don't exist to serve your space." Short, kind, practical.</div></a>
+    <a class="lib-item" href="https://solvingprocrastination.com" target="_blank" rel="noopener"><span class="lib-kind">Site</span><div class="lib-name">Solving Procrastination — Itamar Shatz</div><div class="lib-why">The best evidence-based reference site on procrastination mechanics. Every claim cited.</div></a>
+    <a class="lib-item" href="https://www.psychologytoday.com/au/blog/dont-delay" target="_blank" rel="noopener"><span class="lib-kind">Blog</span><div class="lib-name">Don't Delay — Timothy Pychyl</div><div class="lib-why">The researcher behind "procrastination is emotion regulation". His short book <i>Solving the Procrastination Puzzle</i> is a 90-minute read.</div></a>
+    <a class="lib-item" href="https://jamesclear.com/articles" target="_blank" rel="noopener"><span class="lib-kind">Book / blog</span><div class="lib-name">Atomic Habits — James Clear</div><div class="lib-why">Habit design: make it obvious, easy, attractive, satisfying. The 2-minute rule lives here.</div></a>
+    <a class="lib-item" href="https://www.additudemag.com" target="_blank" rel="noopener"><span class="lib-kind">Site</span><div class="lib-name">ADDitude Magazine</div><div class="lib-why">The biggest ADHD resource — practical strategies for adult ADHD, procrastination, and time blindness. Their webinars/podcast feature the top researchers.</div></a>
+    <a class="lib-item" href="https://hackingyouradhd.com" target="_blank" rel="noopener"><span class="lib-kind">Podcast</span><div class="lib-name">Hacking Your ADHD — William Curb</div><div class="lib-why">Short, practical episodes (15–20 min) on exactly this: task initiation, walls of awful, body doubling. Commute-sized.</div></a>
+    <a class="lib-item" href="https://www.hubermanlab.com" target="_blank" rel="noopener"><span class="lib-kind">Podcast</span><div class="lib-name">Huberman Lab — dopamine &amp; procrastination episodes</div><div class="lib-why">The neuroscience of motivation and dopamine, with protocols. Search the site for "procrastination".</div></a>
+    <a class="lib-item" href="https://drhallowell.com" target="_blank" rel="noopener"><span class="lib-kind">Book</span><div class="lib-name">ADHD 2.0 — Hallowell &amp; Ratey</div><div class="lib-why">The modern, strengths-based take on adult ADHD from the authors of <i>Driven to Distraction</i>. Good on VAST and why your brain seeks stimulation.</div></a>
+  </div>
+</div>
+
+<!-- WINS -->
+<div class="view" id="view-wins">
+  <div class="stat-row">
+    <div class="stat"><div class="num" id="statDays">0</div><div class="lbl">days you showed up</div></div>
+    <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">current streak</div></div>
+    <div class="stat"><div class="num" id="statWins">0</div><div class="lbl">wins logged</div></div>
+  </div>
+  <div class="card">
+    <h2>Your wins</h2>
+    <p class="tiny-note" style="margin:0 0 6px;">A gap in the streak is not a failure — it's a human being having a life. The total never goes down.</p>
+    <div id="winLog"></div>
+  </div>
+</div>
+
+<nav>
+  <button data-view="today" class="active" onclick="app.nav('today')"><span class="ico">☀️</span>Today</button>
+  <button data-view="tasks" onclick="app.nav('tasks')"><span class="ico">📬</span>Tasks</button>
+  <button data-view="boost" onclick="app.nav('boost')"><span class="ico">💡</span>Learn</button>
+  <button data-view="wins" onclick="app.nav('wins')"><span class="ico">🏆</span>Wins</button>
+</nav>
+
+<!-- TIMER -->
+<div id="timerOverlay">
+  <div id="timerTaskName"></div>
+  <div id="timerStep"></div>
+  <div id="timerRing">
+    <svg viewBox="0 0 230 230">
+      <circle id="ringBg" cx="115" cy="115" r="104"></circle>
+      <circle id="ringFg" cx="115" cy="115" r="104"></circle>
+    </svg>
+    <div id="timerClock">5:00</div>
+  </div>
+  <div id="timerMsg"></div>
+  <div class="timer-btns">
+    <button class="btn-primary btn-done" style="background:var(--green); color:#fff;" onclick="app.timerFinish(true)">I did a bit — finish up</button>
+    <button class="btn-secondary" id="pauseBtn" onclick="app.timerPause()">Pause</button>
+    <button class="btn-ghost" onclick="app.timerFinish(false)">Stop — that's okay too</button>
+  </div>
+</div>
+
+<!-- CELEBRATION -->
+<div id="celebrate">
+  <div class="celebrate-card">
+    <div class="emoji" id="celebEmoji">🎉</div>
+    <h3 id="celebTitle">You showed up</h3>
+    <p id="celebBody">That was the hard part.</p>
+    <button class="btn-primary" id="celebGo" onclick="app.closeCelebrate()">Nice</button>
+    <button class="btn-ghost" id="celebMore" style="display:none;" onclick="app.timerAgain()">Keep going — 5 more minutes</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const KEY = "unstuck_v1";
+
+/* ---------- Boost content: CBT + evidence-based micro-reads ---------- */
+const BOOSTS = [
+ {tag:"Behavioural activation", title:"Motivation follows action, not the other way round",
+  body:"Waiting to feel ready is a trap — the feeling of readiness usually arrives a minute or two after you start, not before. This is the core of behavioural activation, one of the best-evidenced techniques in CBT. Start badly, start tiny, but start. The mood catches up."},
+ {tag:"Research", title:"Procrastination isn't laziness — it's emotion regulation",
+  body:"Sirois and Pychyl's research shows procrastination is about escaping how a task makes us feel (dread, boredom, shame), not about time management. So name the feeling: \"I'm avoiding this because it makes me anxious.\" Naming it shrinks it, and shifts the problem from the task to the feeling — which you can work with."},
+ {tag:"Research", title:"Forgive yourself for last time",
+  body:"A study of students (Wohl, 2010) found that those who forgave themselves for procrastinating on one exam procrastinated less on the next. Guilt fuels avoidance; self-forgiveness breaks the loop. Whatever's overdue — you're allowed to just start from today."},
+ {tag:"CBT", title:"The bill in your head is scarier than the bill in the envelope",
+  body:"Avoidance lets the imagined version of a task grow monstrous, because you never collect evidence against it. This is catastrophising. The fix is exposure: open the envelope and check the real number. Nine times out of ten, reality is more boring than the story your brain wrote."},
+ {tag:"CBT", title:"All-or-nothing thinking is lying to you",
+  body:"\"If I can't sort all the mail, there's no point starting\" — that's a cognitive distortion, not a fact. Ten percent done is infinitely more than zero percent done, and it makes the next ten percent easier. Partial credit is real credit."},
+ {tag:"Research", title:"Decide when and where, not just what",
+  body:"Gollwitzer's work on implementation intentions shows that a plan like \"After dinner on Tuesday, I'll open the mail at the kitchen bench\" roughly doubles follow-through compared with \"I should deal with the mail.\" Vague intentions evaporate; if-then plans fire automatically."},
+ {tag:"Psychology", title:"Started tasks nag you — use that",
+  body:"The Zeigarnik effect: your brain holds onto unfinished tasks and keeps tugging at them. It works in your favour once you begin — even two minutes of starting converts a dreaded task into an open loop your mind wants to close. Starting is the whole game."},
+ {tag:"ADHD", title:"Make it now, make it small, make it concrete",
+  body:"ADHD brains steeply discount anything that isn't happening right now — 'due in 3 weeks' may as well not exist. Don't fight it; work with it. Shrink the task to something doable in the next five minutes, and make the first step physical: envelope in hand, phone unlocked, page open."},
+ {tag:"ADHD", title:"Borrow someone else's presence",
+  body:"Body doubling — doing a boring task while someone else is simply nearby or on a call — reliably helps people with ADHD start and stay on task. Pay bills while your wife reads in the same room. You don't need help; you need company."},
+ {tag:"Research", title:"Bundle the dread with something you like",
+  body:"Katy Milkman calls it temptation bundling: pair the avoided task with something enjoyable you only allow during the task. Mail sorting only happens with your favourite album on, or a proper coffee in hand. The task borrows the pleasure's pull."},
+ {tag:"CBT", title:"Swap 'I should' for 'I choose'",
+  body:"\"I should do the bills\" casts you as a delinquent under orders — and rebellion against orders feels great, which feeds avoidance. \"I'm choosing to knock off one bill so future-me relaxes\" is the same act with agency in it. Wording changes willingness."},
+ {tag:"Exposure", title:"Dread peaks just before you open it",
+  body:"Anxiety about an avoided task rises right up to the moment of contact — then drops fast once you're in it. If you feel worst right before opening the envelope or dialling the number, that's not a warning sign; it's the summit. Thirty seconds more and you're on the downhill."},
+ {tag:"Practical", title:"Two minutes is a real unit of work",
+  body:"If it takes under two minutes — opening one envelope, paying one saved biller, replying 'yes' to one email — do it the moment you notice it. Small acts done immediately never join the pile, and the pile is the real enemy."},
+ {tag:"Self-compassion", title:"Talk to yourself like you'd talk to a registrar",
+  body:"You'd never tell a struggling trainee they're hopeless — you'd say the case was hard, here's one thing to do next. Kristin Neff's research shows self-compassion improves persistence, while self-criticism predicts more avoidance. You get better results from yourself with kindness. That's not soft; it's the data."},
+ {tag:"Practical", title:"Ring them — hardship teams exist",
+  body:"If a bill genuinely can't be paid right now, providers in Australia are required to offer hardship arrangements — payment plans, extensions, waived fees. One phone call usually stops the late notices entirely. The call is five awkward minutes; the avoided version costs weeks of low-grade dread."},
+ {tag:"Perspective", title:"Done is a decision, not a feeling",
+  body:"Perfectionism whispers that you'll deal with the mail properly 'when you have a clear evening'. That evening isn't coming. A rushed, imperfect, 70% job done tonight beats the perfect system you'll never build. Ship the small version."},
+ {tag:"Sleep", title:"Tonight's late night is tomorrow's avoidance",
+  body:"Sleep debt hits executive function first — exactly the machinery you need to face hard tasks. Revenge bedtime procrastination steals leisure from sleep because the day gave you none. Schedule real downtime earlier in the evening, and make lights-out an if-then routine, not a nightly debate."},
+ {tag:"Health", title:"A checkup is a two-minute booking, not a verdict",
+  body:"We avoid medical appointments because they threaten identity, not schedules. So shrink it: today's task is never 'confront my health' — it's one phone call to book a slot three weeks away. Today-you dials; future-you attends. You'd give a patient the same advice."},
+ {tag:"Exercise", title:"The workout is out the door, not at the gym",
+  body:"The decision point for exercise is shoes-on-and-outside, not the session itself. Commit only to ten minutes of movement — research on task initiation shows the continuation usually takes care of itself, and even the days it doesn't still count as wins."}
+];
+
+const TIMER_MSGS = [
+ "You've already done the hardest part — you started.",
+ "Just this one thing. Nothing else exists for five minutes.",
+ "It's allowed to be done badly. Badly done is done.",
+ "Notice the dread shrinking? It usually does once you're in.",
+ "Distracted? No drama. Just come back to the one thing.",
+ "You're building evidence that you're someone who faces things.",
+ "Almost there. Future-you is already grateful."
+];
+
+const FIRST_STEP_PROMPTS = [
+ "Your only job right now:",
+ "Ignore the rest. Just:",
+ "One tiny move:",
+ "Nothing else matters except:"
+];
+
+/* ---------- State ---------- */
+let S = load();
+function seed(){
+  return {
+    tasks:[
+      {id:id(), name:"Clear the mail pile", done:false, steps:[
+        {id:id(), text:"Gather every bit of mail into ONE pile (don't read anything yet)", done:false},
+        {id:id(), text:"Open every envelope — just open, don't action", done:false},
+        {id:id(), text:"Bin/recycle all the junk immediately", done:false},
+        {id:id(), text:"Split the rest into two piles: 'needs action' and 'just keep'", done:false},
+        {id:id(), text:"Put the 'just keep' pile away somewhere — done with those", done:false},
+        {id:id(), text:"Count the 'needs action' items (it's probably fewer than you feared)", done:false}
+      ]},
+      {id:id(), name:"Sort the overdue bills", done:false, steps:[
+        {id:id(), text:"List every bill you know about on one note — nothing else", done:false},
+        {id:id(), text:"Pick ONE bill. Find the actual amount and due date", done:false},
+        {id:id(), text:"If you can pay it, pay it right now (5 min, phone in hand)", done:false},
+        {id:id(), text:"If you can't, ring them and ask for a payment plan — they do this all day", done:false},
+        {id:id(), text:"Cross it off the list. Feel that? That's one down", done:false},
+        {id:id(), text:"Repeat with the next bill — next session is fine", done:false}
+      ]}
+    ],
+    wins:[], showDays:[], todayPick:null, boostIdx: Math.floor(Math.random()*BOOSTS.length)
+  };
+}
+function load(){
+  try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.tasks) return d; }catch(e){}
+  return seed();
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+function id(){ return Math.random().toString(36).slice(2,10); }
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+function $(q){ return document.querySelector(q); }
+
+/* ---------- Greeting ---------- */
+function greet(){
+  const h = new Date().getHours();
+  const g = h<5 ? "Still up, Surain?" : h<12 ? "Morning, Surain" : h<17 ? "Afternoon, Surain" : "Evening, Surain";
+  $("#greeting").textContent = g;
+  const subs = [
+    "One small thing at a time.",
+    "You don't need motivation. You need five minutes.",
+    "The pile is smaller than it feels.",
+    "Show up small. It compounds."
+  ];
+  $("#subGreeting").textContent = subs[new Date().getDate() % subs.length];
+}
+
+/* ---------- Today's one thing ---------- */
+function activeTasks(){ return S.tasks.filter(t=>!t.done); }
+function pickToday(force){
+  const act = activeTasks();
+  if(!act.length){ S.todayPick=null; save(); return null; }
+  const t = todayStr();
+  if(!force && S.todayPick && S.todayPick.date===t && act.some(x=>x.id===S.todayPick.taskId)){
+    return act.find(x=>x.id===S.todayPick.taskId);
+  }
+  let pool = act;
+  if(force && S.todayPick && act.length>1){ pool = act.filter(x=>x.id!==S.todayPick.taskId); }
+  const chosen = pool[Math.floor(Math.random()*pool.length)];
+  S.todayPick = {date:t, taskId:chosen.id};
+  save();
+  return chosen;
+}
+function firstStep(task){ return task.steps.find(s=>!s.done) || null; }
+function renderToday(){
+  const el = $("#scaryContent");
+  const task = pickToday(false);
+  if(!task){
+    el.innerHTML = '<div class="empty">Nothing on the avoid-list right now. 🎉<br>Add something under Tasks when it appears — they always do.</div>';
+    return;
+  }
+  const st = firstStep(task);
+  const prompt = FIRST_STEP_PROMPTS[new Date().getDate() % FIRST_STEP_PROMPTS.length];
+  el.innerHTML =
+    '<div class="big-task">'+esc(task.name)+'</div>'+
+    (st ? '<div class="step-hint">'+prompt+' <b>'+esc(st.text)+'</b></div>'
+        : '<div class="step-hint">All steps ticked — open it in Tasks and mark it done!</div>')+
+    '<button class="btn-primary" onclick="app.startTimer(\''+task.id+'\')">▶ Just 5 minutes</button>'+
+    '<button class="btn-ghost" onclick="app.swapToday()">Not today — show me a different one</button>';
+}
+
+/* ---------- Timer ---------- */
+const TIMER_SECS = 5*60;
+let timer = {left:TIMER_SECS, int:null, paused:false, taskId:null, msgIdx:0};
+const RING_C = 2*Math.PI*104;
+function startTimer(taskId){
+  const task = S.tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  timer = {left:TIMER_SECS, int:null, paused:false, taskId:taskId, msgIdx:Math.floor(Math.random()*TIMER_MSGS.length)};
+  $("#timerTaskName").textContent = task.name;
+  const st = firstStep(task);
+  $("#timerStep").textContent = st ? st.text : "Any small piece of it counts.";
+  $("#timerMsg").textContent = "Five minutes. Then you're free to stop.";
+  $("#pauseBtn").textContent = "Pause";
+  $("#ringFg").style.strokeDasharray = RING_C;
+  $("#ringFg").style.strokeDashoffset = 0;
+  drawClock();
+  $("#timerOverlay").classList.add("show");
+  timer.int = setInterval(tick, 1000);
+}
+function tick(){
+  if(timer.paused) return;
+  timer.left--;
+  drawClock();
+  if(timer.left>0 && timer.left % 45 === 0){
+    timer.msgIdx = (timer.msgIdx+1) % TIMER_MSGS.length;
+    const m = $("#timerMsg");
+    m.style.opacity = 0;
+    setTimeout(()=>{ m.textContent = TIMER_MSGS[timer.msgIdx]; m.style.opacity = 1; }, 400);
+  }
+  if(timer.left<=0){
+    clearInterval(timer.int);
+    if(navigator.vibrate) navigator.vibrate([100,60,100]);
+    timerFinish(true, true);
+  }
+}
+function drawClock(){
+  const m = Math.floor(timer.left/60), s = timer.left%60;
+  $("#timerClock").textContent = m+":"+String(s).padStart(2,"0");
+  $("#ringFg").style.strokeDashoffset = RING_C * (1 - timer.left/TIMER_SECS);
+}
+function timerPause(){
+  timer.paused = !timer.paused;
+  $("#pauseBtn").textContent = timer.paused ? "Resume" : "Pause";
+}
+function timerFinish(didWork, full){
+  clearInterval(timer.int);
+  $("#timerOverlay").classList.remove("show");
+  const task = S.tasks.find(t=>t.id===timer.taskId);
+  if(didWork && task){
+    const mins = Math.round((TIMER_SECS - timer.left)/60) || (full?5:1);
+    logWin((full?5:Math.max(1,mins))+" min on: "+task.name);
+    showCelebrate(
+      full ? "Five whole minutes!" : "You showed up",
+      full ? "That's a real dent. Tick off any steps you finished under Tasks."
+           : "Even a partial go counts — the starting was the hard part.",
+      full ? "🔥" : "🌱", true);
+  } else if(!didWork){
+    showCelebrate("Stopping is allowed","No guilt. You opened the app and faced it — that's more than avoiding. Try again whenever.","🫶", false, true);
+  }
+  renderAll();
+}
+function timerAgain(){
+  closeCelebrate();
+  if(timer.taskId) startTimer(timer.taskId);
+}
+
+/* ---------- Wins / streak ---------- */
+function logWin(text){
+  S.wins.unshift({ts:Date.now(), text:text});
+  const t = todayStr();
+  if(!S.showDays.includes(t)) S.showDays.push(t);
+  save();
+}
+function logFreeWin(){
+  const text = prompt("What did you do? (Anything counts — opened one envelope, made one call…)");
+  if(text && text.trim()){
+    logWin(text.trim());
+    showCelebrate("Logged!","It all counts. The record only grows.","⭐", false);
+    renderAll();
+  }
+}
+function streak(){
+  let n=0; const d=new Date();
+  for(;;){
+    const s = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    if(S.showDays.includes(s)){ n++; d.setDate(d.getDate()-1); }
+    else if(n===0 && s===todayStr()){ d.setDate(d.getDate()-1); } /* today not yet — check yesterday */
+    else break;
+  }
+  return n;
+}
+function renderWins(){
+  $("#statDays").textContent = S.showDays.length;
+  $("#statStreak").textContent = streak();
+  $("#statWins").textContent = S.wins.length;
+  const log = $("#winLog");
+  if(!S.wins.length){ log.innerHTML = '<div class="empty">Your first win goes here. It can be tiny.</div>'; return; }
+  log.innerHTML = S.wins.slice(0,50).map(w=>{
+    const d = new Date(w.ts);
+    const when = d.toLocaleDateString("en-AU",{weekday:"short", day:"numeric", month:"short"})+" · "+d.toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
+    return '<div class="win-item">'+esc(w.text)+'<div class="when">'+when+'</div></div>';
+  }).join("");
+}
+
+/* ---------- Tasks ---------- */
+let openTaskId = null;
+function renderTasks(){
+  const act = activeTasks();
+  const done = S.tasks.filter(t=>t.done);
+  const list = $("#taskList");
+  if(!act.length){
+    list.innerHTML = '<div class="empty">Nothing pending. Enjoy it — or add the thing you just thought of. 😉</div>';
+  } else {
+    list.innerHTML = act.map(t=>{
+      const total=t.steps.length, doneN=t.steps.filter(s=>s.done).length;
+      const open = t.id===openTaskId ? " open":"";
+      return '<div class="task'+open+'" id="task-'+t.id+'">'+
+        '<div class="task-head" onclick="app.toggleTask(\''+t.id+'\')">'+
+          '<div style="flex:1"><div class="task-name">'+esc(t.name)+'</div>'+
+          '<div class="task-meta">'+(total? doneN+" of "+total+" steps done" : "No steps yet — add a tiny first one")+'</div></div>'+
+          '<span class="chev">▶</span></div>'+
+        '<div class="task-body">'+
+          t.steps.map(s=>'<div class="step"><input type="checkbox" id="st-'+s.id+'" '+(s.done?"checked":"")+' onchange="app.toggleStep(\''+t.id+'\',\''+s.id+'\')"><label for="st-'+s.id+'">'+esc(s.text)+'</label></div>').join("")+
+          '<div class="add-row"><input type="text" id="stepInput-'+t.id+'" placeholder="Add a 2-minute step…" enterkeyhint="done" onkeydown="if(event.key===\'Enter\')app.addStep(\''+t.id+'\')"><button onclick="app.addStep(\''+t.id+'\')">＋</button></div>'+
+          '<p class="tiny-note">If a step still feels scary, it\'s too big — split it again.</p>'+
+          '<div class="row" style="margin-top:8px;">'+
+            '<button class="btn-small" onclick="app.startTimer(\''+t.id+'\')">▶ 5 min on this</button>'+
+            '<button class="btn-small btn-done" onclick="app.completeTask(\''+t.id+'\')">✓ Whole thing done</button>'+
+            '<button class="btn-small" style="background:none; color:var(--ink-soft); flex:0;" onclick="app.deleteTask(\''+t.id+'\')">🗑</button>'+
+          '</div>'+
+        '</div></div>';
+    }).join("");
+  }
+  $("#doneList").innerHTML = done.length ?
+    '<div class="card"><h2>Conquered ('+done.length+')</h2>'+
+    done.map(t=>'<div class="win-item">✅ '+esc(t.name)+'</div>').join("")+'</div>' : "";
+}
+function toggleTask(tid){
+  openTaskId = openTaskId===tid ? null : tid;
+  renderTasks();
+}
+const TEMPLATES = {
+  med: {name:"Book the overdue checkup", steps:[
+    "Decide which one it is (GP? dentist? skin check? bloods?)",
+    "Find the clinic's number or booking page — just find it",
+    "Book any slot 2–4 weeks out (you only have to dial, not attend today)",
+    "Put it in the calendar with a reminder the day before"]},
+  exercise: {name:"Get moving again", steps:[
+    "Put workout clothes/shoes somewhere you'll trip over them",
+    "Pick a time tomorrow and say it out loud: 'After X, I will Y'",
+    "Do just 10 minutes — walking counts, everything counts",
+    "Log it here. Two sessions in a week = officially back"]},
+  sleep: {name:"Get to bed on time tonight", steps:[
+    "Pick tonight's lights-out and count back 45 min — that's wind-down o'clock",
+    "Do one genuinely fun thing BEFORE wind-down so there's nothing to steal back later",
+    "At wind-down: phone on charger, outside the bedroom",
+    "In bed by the time you picked. Done = win, even if sleep is slow to come"]},
+  call: {name:"Make that call I keep dodging", steps:[
+    "Write ONE sentence: what do I actually need from this call?",
+    "Say the opening line out loud once (it kills 80% of the dread)",
+    "Dial. Worst realistic case: voicemail — which also counts",
+    "Jot down what they said before you forget"]},
+  email: {name:"Send the email I owe", steps:[
+    "Open a draft and write the single key sentence — nothing else",
+    "Add two lines of politeness around it. That's the whole email",
+    "Don't polish. Read once, hit send",
+    "Notice it took 5 minutes, not the 3 weeks of dread"]}
+};
+function quickAdd(kind){
+  const tpl = TEMPLATES[kind];
+  if(!tpl) return;
+  const t = {id:id(), name:tpl.name, done:false, steps:tpl.steps.map(s=>({id:id(), text:s, done:false}))};
+  S.tasks.unshift(t);
+  openTaskId = t.id;
+  logWin("Named the thing: "+tpl.name);
+  save(); renderAll();
+}
+function addTask(){
+  const inp = $("#newTaskInput");
+  const name = inp.value.trim();
+  if(!name) return;
+  const t = {id:id(), name:name, done:false, steps:[]};
+  S.tasks.unshift(t);
+  inp.value = "";
+  openTaskId = t.id;
+  logWin("Named the thing: "+name);
+  save(); renderAll();
+}
+function addStep(tid){
+  const inp = $("#stepInput-"+tid);
+  const text = inp.value.trim();
+  if(!text) return;
+  const t = S.tasks.find(x=>x.id===tid);
+  t.steps.push({id:id(), text:text, done:false});
+  save(); renderTasks();
+  const again = $("#stepInput-"+tid); if(again) again.focus();
+}
+function toggleStep(tid, sid){
+  const t = S.tasks.find(x=>x.id===tid);
+  const s = t.steps.find(x=>x.id===sid);
+  s.done = !s.done;
+  if(s.done){
+    logWin("Step done: "+s.text);
+    if(t.steps.length && t.steps.every(x=>x.done)){
+      save();
+      showCelebrate("Every step ticked!","\""+t.name+"\" is basically beaten. Mark the whole thing done?","🏁", false);
+    }
+  }
+  save(); renderAll();
+}
+function completeTask(tid){
+  const t = S.tasks.find(x=>x.id===tid);
+  t.done = true;
+  openTaskId = null;
+  logWin("FINISHED: "+t.name);
+  save();
+  showCelebrate("Actually done. Gone. Finished.","\""+t.name+"\" can never scare you again.","🎉", false);
+  renderAll();
+}
+function deleteTask(tid){
+  if(!confirm("Remove this task? (Deleting because it's genuinely not needed is fine. Deleting to avoid it… you know the difference 😉)")) return;
+  S.tasks = S.tasks.filter(x=>x.id!==tid);
+  save(); renderAll();
+}
+
+/* ---------- Boost ---------- */
+function renderBoost(){
+  const b = BOOSTS[S.boostIdx % BOOSTS.length];
+  const c = $("#boostCard");
+  c.classList.remove("fade"); void c.offsetWidth; c.classList.add("fade");
+  c.innerHTML = '<div class="boost-tag">'+esc(b.tag)+'</div><div class="boost-title">'+esc(b.title)+'</div><div class="boost-body">'+esc(b.body)+'</div>';
+}
+function nextBoost(){
+  S.boostIdx = (S.boostIdx+1) % BOOSTS.length;
+  save(); renderBoost();
+}
+let miniIdx = Math.floor(Math.random()*BOOSTS.length);
+function renderMiniBoost(){
+  const b = BOOSTS[miniIdx % BOOSTS.length];
+  $("#miniBoost").innerHTML = "<b>"+esc(b.title)+".</b> "+esc(b.body.split(". ").slice(0,2).join(". "))+".";
+}
+function newMiniBoost(){ miniIdx++; renderMiniBoost(); }
+
+/* ---------- Celebration ---------- */
+function showCelebrate(title, body, emoji, offerMore, noWin){
+  $("#celebTitle").textContent = title;
+  $("#celebBody").textContent = body;
+  $("#celebEmoji").textContent = emoji || "🎉";
+  $("#celebMore").style.display = offerMore ? "block" : "none";
+  $("#celebrate").classList.add("show");
+}
+function closeCelebrate(){ $("#celebrate").classList.remove("show"); }
+
+/* ---------- Nav / render ---------- */
+function nav(v){
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("#view-"+v).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active", b.dataset.view===v));
+  window.scrollTo(0,0);
+}
+function swapToday(){ pickToday(true); renderToday(); }
+function renderAll(){ renderToday(); renderTasks(); renderWins(); renderBoost(); }
+
+/* ---------- Init ---------- */
+greet();
+renderAll();
+renderMiniBoost();
+$("#newTaskInput").addEventListener("keydown", e=>{ if(e.key==="Enter") addTask(); });
+
+window.app = {nav, startTimer, timerPause, timerFinish, timerAgain, swapToday,
+  addTask, addStep, toggleStep, toggleTask, completeTask, deleteTask, quickAdd,
+  nextBoost, newMiniBoost, logFreeWin, closeCelebrate};
+})();
+</script>
+</body>
+</html>
